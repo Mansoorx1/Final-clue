@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Tech Fest Treasure Hunt</title>
+<style>
+  :root {
+    --bg: #0f1220; --card: #181c30; --text: #eef0f8; --muted: #9aa1bd;
+    --accent: #6ee7b7; --accent-ink: #062b1f; --err: #ff8a8a; --line: #2a3050;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f4f5fb; --card: #ffffff; --text: #161a2e; --muted: #5c6384;
+      --accent: #0f9d6e; --accent-ink: #ffffff; --err: #c0392b; --line: #dde0ee;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 16px; background: var(--bg); color: var(--text);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main {
+    width: 100%; max-width: 420px; background: var(--card);
+    border: 1px solid var(--line); border-radius: 16px; padding: 24px;
+  }
+  h1 { margin: 0 0 4px; font-size: 1.35rem; }
+  p.sub { margin: 0 0 20px; color: var(--muted); font-size: .95rem; }
+  label { display: block; margin: 14px 0 6px; font-size: .9rem; color: var(--muted); }
+  input[type=text], input[type=password] {
+    width: 100%; padding: 12px 14px; font-size: 1rem; color: var(--text);
+    background: transparent; border: 1px solid var(--line); border-radius: 10px;
+  }
+  input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .show { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: .85rem; color: var(--muted); }
+  button {
+    width: 100%; margin-top: 20px; padding: 13px; font-size: 1rem; font-weight: 600;
+    color: var(--accent-ink); background: var(--accent); border: 0; border-radius: 10px; cursor: pointer;
+  }
+  button:disabled { opacity: .6; cursor: default; }
+  button.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+  #error { min-height: 1.4em; margin: 12px 0 0; color: var(--err); font-size: .9rem; }
+  #clue {
+    white-space: pre-wrap; word-wrap: break-word; margin: 14px 0 0; padding: 16px;
+    border: 1px dashed var(--accent); border-radius: 10px; font-size: 1.05rem;
+  }
+  .badge { display: inline-block; font-size: .8rem; color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <section id="login">
+    <h1>Tech Fest Treasure Hunt</h1>
+    <p class="sub">Enter your team number and password to get your clue.</p>
+    <form id="form" autocomplete="off">
+      <label for="team">Team number</label>
+      <input id="team" type="text" inputmode="text" autocapitalize="none" autocorrect="off" spellcheck="false" required>
+      <label for="pw">Password</label>
+      <input id="pw" type="password" autocapitalize="none" autocorrect="off" spellcheck="false" required>
+      <label class="show"><input id="showpw" type="checkbox"> Show password</label>
+      <button id="go" type="submit">Unlock clue</button>
+      <p id="error" role="alert" aria-live="polite"></p>
+    </form>
+  </section>
+
+  <section id="result" hidden>
+    <span class="badge" id="who"></span>
+    <h1>Your clue</h1>
+    <div id="clue"></div>
+    <button class="ghost" id="lock" type="button">Lock again</button>
+  </section>
+</main>
+
+<script>
+const DATA = {"iter": 200000, "teams": {"1": {"salt": "Lw+m2Y2ThkiEKnmFjLQd0Q==", "iv": "9vMltOldqht8DnI+", "ct": "zp/wz1HilRflnIOWmKELIC5gkkY35ho+iw/QRuZ3HeKNJg9NF7PWJtyWK5FEOeEI9ApqkPpwX5AAvqRK01Nk+ZXgkRgQRC5u4UumLOmiCfvTsjlPEWlwidX54R5CxJHkYD/8nns6wI07DAtciBw9s5qhKU64eemkY8yWfQLev1L8zx8KRGQj1px8Ogw8oPKHOuSxs+DHjaogU/xYHZKZomG5+fNJ5zTvlOnEqD6VcaOpFDD9V+I54jgA6zrsUJCn8nIwINwj9l74sOw="}, "2": {"salt": "sGdWRaVC4w388O8Gx9zMGA==", "iv": "oUvOMwq2+vXHznYw", "ct": "3rVdZ75DXHrpf+kZvccV3Ad646SI98WX2HGT3cpfIrga2B8Jpz9/iXo6jUL6TpuE4dOBsM8Ni8StOj6VC9t1nwzQre4vKInUQGnw8N05T0YPkFO4tH7w/iUAntDexaCkKS4myqAa5aLt/Ljhxarz6b/8JTKkNBju+oUEBJ9fJhc2Dh0jR+8lEaOcxUnt9afLqJcj4uw5wnR3b94qazsMMw=="}, "3": {"salt": "2WyJ+Lbh6gZdurM10CCuVQ==", "iv": "KjNo2vt6hSC+LGI1", "ct": "IqQu60EDCu/UFLadxH1YqQykqXWxEhsdY0JINSWyjgpU7BSuW2GlS0YkMKZFT2evo8bQS+z7SVIj56uwKaUDxcUHI3SdATo/ZFYco86br+Nq1kpsoNzX6k5DoAVu0UfhhVf6Iqvt6KJVLjKuRSxmHE/Rke8OpunD2AAbcd8+3grju56E/w4vpg=="}}};
+
+// CORE-START
+const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+const norm = s => s.trim().toLowerCase();
+
+async function unlockClue(data, team, pw) {
+  const rec = data.teams[norm(team)];
+  if (!rec) throw new Error('unknown team');
+  const base = await crypto.subtle.importKey(
+    'raw', new TextEncoder().encode(norm(pw)), 'PBKDF2', false, ['deriveKey']);
+  const key = await crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt: b64(rec.salt), iterations: data.iter, hash: 'SHA-256' },
+    base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(rec.iv) }, key, b64(rec.ct));
+  return new TextDecoder().decode(plain);
+}
+// CORE-END
+
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+$('showpw').addEventListener('change', e => { $('pw').type = e.target.checked ? 'text' : 'password'; });
+
+$('form').addEventListener('submit', async e => {
+  e.preventDefault();
+  $('error').textContent = '';
+  if (!(window.crypto && crypto.subtle)) {
+    $('error').textContent = 'This page must be opened over HTTPS to work.';
+    return;
+  }
+  const btn = $('go');
+  btn.disabled = true; btn.textContent = 'Checking…';
+  try {
+    const clue = await unlockClue(DATA, $('team').value, $('pw').value);
+    $('who').textContent = 'Team ' + $('team').value.trim();
+    $('clue').textContent = clue;
+    $('login').hidden = true; $('result').hidden = false;
+  } catch (err) {
+    await sleep(1200);
+    $('error').textContent = 'Wrong team number or password. Try again.';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Unlock clue';
+  }
+});
+
+$('lock').addEventListener('click', () => {
+  $('clue').textContent = ''; $('pw').value = ''; $('showpw').checked = false; $('pw').type = 'password';
+  $('result').hidden = true; $('login').hidden = false;
+});
+</script>
+</body>
+</html>
